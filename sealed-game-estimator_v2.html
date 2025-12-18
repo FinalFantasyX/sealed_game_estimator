@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sealed Game Estimator</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#aab3d6;
+      --muted2:#7f89b7;
+      --accent:#8cf0ff;
+      --accent2:#b7ffb7;
+      --danger:#ff6b6b;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1000px 600px at 20% 0%, rgba(140,240,255,.20), transparent 60%),
+                  radial-gradient(1000px 600px at 80% 10%, rgba(183,255,183,.14), transparent 55%),
+                  radial-gradient(1200px 800px at 50% 120%, rgba(140,240,255,.10), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+    .hero{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .title{
+      font-size: 28px;
+      line-height:1.15;
+      letter-spacing:.2px;
+      margin:0;
+    }
+    .subtitle{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size: 14px;
+      max-width: 720px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(17,26,51,.55);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 16px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .pill{display:none}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(17,26,51,.88), rgba(15,23,48,.80));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .head{
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .card .head h2{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:.2px;
+    }
+    .card .head p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size: 13px;
+    }
+    .card .body{
+      padding: 16px;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 560px){
+      .row{grid-template-columns:1fr}
+    }
+    .field{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      background: rgba(0,0,0,.14);
+    }
+    .field .label{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .field .hint{
+      color: var(--muted2);
+      font-size: 12px;
+      margin: 0 0 8px;
+    }
+    input[type="text"], input[type="number"]{
+      width:100%;
+      font-size: 16px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(15,23,48,.55);
+      color: var(--text);
+      outline:none;
+    }
+    input[type="text"]:focus, input[type="number"]:focus{
+      border-color: rgba(140,240,255,.55);
+      box-shadow: 0 0 0 3px rgba(140,240,255,.10);
+    }
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .btn{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(15,23,48,.55);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: transform .08s ease, border-color .08s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(140,240,255,.35)}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(140,240,255,.22), rgba(15,23,48,.55));
+      border-color: rgba(140,240,255,.35);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(255,107,107,.18), rgba(15,23,48,.55));
+      border-color: rgba(255,107,107,.30);
+    }
+    .factors{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .factor{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .factor label{
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      cursor:pointer;
+    }
+    .factor input{
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+    .factor-title{
+      font-weight: 800;
+      letter-spacing:.15px;
+      margin: 0;
+      font-size: 13px;
+    }
+    .factor-desc{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .results{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 560px){
+      .results{grid-template-columns:1fr}
+    }
+    .stat{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      background: rgba(0,0,0,.12);
+    }
+    .stat .k{
+      color: var(--muted);
+      font-size: 12px;
+      margin:0 0 6px;
+    }
+    .stat .v{
+      margin:0;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+    .small{
+      font-size: 12px;
+      color: var(--muted2);
+      margin-top: 6px;
+    }
+    .admin{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    @media (max-width: 560px){
+      .admin{grid-template-columns:1fr}
+    }
+    .admin .stat .v{
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--accent2);
+    }
+    .footer{
+      margin-top: 14px;
+      color: var(--muted2);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1 class="title">Sealed Game Estimator</h1>
+        <p class="subtitle">
+          A Fermi Paradox style calculator to estimate how many sealed copies of a video game still exist in the wild.
+        </p>
+      </div>
+      <div class="pill">
+        <span class="mono">SealedNow = Sales × BSR × (1−AR)^Y × Π(Fᵢ)</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="head">
+          <h2>Inputs</h2>
+          <p>Fill in Total Sold and Year Released. Use <b>PS2 FFX</b> as a demo.</p>
+        </div>
+        <div class="body">
+          <div class="row">
+            <div class="field">
+              <div class="label"><span>Total Sold</span></div>
+              <p class="hint">Numbers only (e.g., 5300000)</p>
+              <input id="sales" type="text" inputmode="numeric" placeholder=""/>
+            </div>
+
+            <div class="field">
+              <div class="label"><span>Release Year</span></div>
+              <p class="hint">4-digit year (e.g., 2001)</p>
+              <input id="releaseYear" type="number" min="1970" max="2100" step="1" placeholder=""/>
+            </div>
+          </div>
+
+          <div class="btns">
+            <button class="btn primary" id="resetFFX">PS2 FFX</button>
+            <button class="btn danger" id="clearAll">Clear All</button>
+            <button class="btn" id="copyResults">Copy Results</button>
+          </div>
+
+          <div class="footer">
+            <div><b>Tip:</b> Release Year affects the Baseline Sealed Rate (BSR).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <h2>Results</h2>
+          <p>Live updates as you type / toggle factors.</p>
+        </div>
+        <div class="body">
+          <div class="results">
+            <div class="stat">
+              <p class="k">Estimated sealed copies now</p>
+              <p class="v" id="sealedNow">—</p>
+              <div class="small">Rounded to whole copies.</div>
+            </div>
+            <div class="stat">
+              <p class="k">Estimated sealed rate</p>
+              <p class="v" id="sealedRate">—</p>
+              <div class="small">SealedNow ÷ Sales</div>
+            </div>
+            <div class="stat">
+              <p class="k">Π(Fᵢ) selected factor product</p>
+              <p class="v" id="fi">—</p>
+              <div class="small">Only checked factors are multiplied.</div>
+            </div>
+            <div class="stat">
+              <p class="k">(1 − AR)<sup>Y</sup> survival term</p>
+              <p class="v" id="survival">—</p>
+              <div class="small">AR applied over years since release.</div>
+            </div>
+          </div>
+
+          <div class="admin">
+            <div class="stat">
+              <p class="k">Baseline Sealed Rate (BSR)</p>
+              <p class="v" id="bsr">—</p>
+              <div class="small">Chosen by release year bucket.</div>
+            </div>
+            <div class="stat">
+              <p class="k">Annual Attrition Rate (AR)</p>
+              <p class="v" id="ar">—</p>
+              <div class="small">Admin-tunable constant.</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <div class="mono" id="debugLine"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="head">
+          <h2>Factors</h2>
+          <p>Check all that apply.</p>
+        </div>
+        <div class="body">
+          <div class="factors" id="factorsContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Admin constants (visible, not editable in UI) =====
+    const ADMIN = {
+      bsr_pre2000: 0.006,
+      bsr_2000_2010: 0.010,
+      bsr_post2010: 0.020,
+      ar: 0.0085
+    };
+
+    // ===== Factors (user toggles) =====
+    const factors = [
+      { key: "f_bundle",   multiplier: 0.5,  label: "Pack-in/Bundle", description: "Games opened more often when purchased with their accompanying system", defaultOn: false },
+      { key: "f_multi",    multiplier: 0.8,  label: "Multiplayer", description: "Games opened more often when playing in a community", defaultOn: false },
+      { key: "f_dlc",      multiplier: 0.65,  label: "Online Code/DLC", description: "Games opened more often when there is incentive to open", defaultOn: false },
+      { key: "f_physical", multiplier: 0.4, label: "Physical Only at time of release", description: "Physical games opened more often when there is no online option", defaultOn: false },
+      { key: "f_initial",  multiplier: 0.5, label: "Initial Print Run", description: "Games new to market are often opened more frequently. Re-master/Greatest Hits/Platinum/Selects often forgotten about or purchased in duplicate", defaultOn: false },
+      { key: "f_box",      multiplier: 0.4,  label: "Boxed", description: "Boxed games are more susceptible to water/dirt/heat/crushing damage vs DVD/CD cases; weak seals susceptible to tearing (h-seam vs y-folds)", defaultOn: false },
+      { key: "f_holiday",  multiplier: 0.6,  label: "Nov/Dec Release", description: "Christmas gifts are often opened right away", defaultOn: false },
+      { key: "f_limited",  multiplier: 3.8,  label: "Limited-run collector-focused", description: "Limited-run collector-focused", defaultOn: false },
+      { key: "f_child",    multiplier: 0.4,  label: "Intended Audience/Child Focused", description: "Games intended for young audience generally open immediately, adult games can sit sealed in backlog", defaultOn: false },
+      { key: "f_main",     multiplier: 0.6, label: "Main Line Games", description: "Popular games tend to be opened more often (Mario, Legend of Zelda, Final Fantasy, etc.)", defaultOn: false },
+      { key: "f_xxx",     multiplier: 0.1, label: "Adult Game", description: "Perverted adults always open games to see pixle boobs", defaultOn: false },
+    ];
+
+    // ===== DOM =====
+    const els = {
+      sales: document.getElementById("sales"),
+      releaseYear: document.getElementById("releaseYear"),
+      resetFFX: document.getElementById("resetFFX"),
+      clearAll: document.getElementById("clearAll"),
+      copyResults: document.getElementById("copyResults"),
+      factorsContainer: document.getElementById("factorsContainer"),
+      sealedNow: document.getElementById("sealedNow"),
+      sealedRate: document.getElementById("sealedRate"),
+      fi: document.getElementById("fi"),
+      survival: document.getElementById("survival"),
+      bsr: document.getElementById("bsr"),
+      ar: document.getElementById("ar"),
+      debugLine: document.getElementById("debugLine")
+    };
+
+    // ===== Helpers =====
+    const nowYear = new Date().getFullYear();
+
+    function formatInt(n){
+      if (!Number.isFinite(n)) return "—";
+      return Math.round(n).toLocaleString("en-US");
+    }
+    function formatPct(x){
+      if (!Number.isFinite(x)) return "—";
+      return (x*100).toFixed(3) + "%";
+    }
+    function formatFloat(x, digits=5){
+      if (!Number.isFinite(x)) return "—";
+      return x.toFixed(digits);
+    }
+    function parseSales(){
+      const raw = (els.sales.value || "").replace(/,/g,"").trim();
+      if (!raw) return NaN;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    function getBSR(year){
+      if (!Number.isFinite(year)) return NaN;
+      if (year < 2000) return ADMIN.bsr_pre2000;
+      if (year <= 2010) return ADMIN.bsr_2000_2010;
+      return ADMIN.bsr_post2010;
+    }
+    function getYearsSince(year){
+      if (!Number.isFinite(year)) return NaN;
+      const y = nowYear - year;
+      return y >= 0 ? y : NaN;
+    }
+    function getFactorProduct(){
+      let prod = 1;
+      factors.forEach(f => {
+        const cb = document.getElementById(f.key);
+        if (cb && cb.checked) prod *= f.multiplier;
+      });
+      return prod;
+    }
+    function getSurvival(ar, years){
+      if (!Number.isFinite(ar) || !Number.isFinite(years)) return NaN;
+      return Math.pow(1 - ar, years);
+    }
+
+    function recompute(){
+      const sales = parseSales();
+      const ry = Number(els.releaseYear.value);
+      const years = getYearsSince(ry);
+      const bsr = getBSR(ry);
+      const fi = getFactorProduct();
+      const survival = getSurvival(ADMIN.ar, years);
+
+      let sealedNow = NaN;
+      let sealedRate = NaN;
+
+      if (Number.isFinite(sales) && Number.isFinite(bsr) && Number.isFinite(survival) && Number.isFinite(fi)) {
+        sealedNow = sales * bsr * survival * fi;
+        sealedRate = sealedNow / sales;
+      }
+
+      els.sealedNow.textContent = formatInt(sealedNow);
+      els.sealedRate.textContent = formatPct(sealedRate);
+      els.fi.textContent = formatFloat(fi, 5);
+      els.survival.textContent = formatFloat(survival, 5);
+      els.bsr.textContent = Number.isFinite(bsr) ? formatFloat(bsr, 5) : "—";
+      els.ar.textContent = formatFloat(ADMIN.ar, 5);
+
+      const dbg = [];
+      if (Number.isFinite(ry)) dbg.push(`Y=${years}`);
+      if (Number.isFinite(sales)) dbg.push(`Sales=${Math.round(sales)}`);
+      if (Number.isFinite(bsr)) dbg.push(`BSR=${bsr}`);
+      if (Number.isFinite(fi)) dbg.push(`Fi=${fi.toFixed(5)}`);
+      if (Number.isFinite(survival)) dbg.push(`Survival=${survival.toFixed(5)}`);
+      els.debugLine.textContent = dbg.length ? dbg.join("  •  ") : "";
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+
+    function renderFactors(){
+      els.factorsContainer.innerHTML = "";
+      factors.forEach(f => {
+        const wrap = document.createElement("div");
+        wrap.className = "factor";
+        const desc = (f.description || "").trim();
+        wrap.innerHTML = `
+          <label>
+            <input type="checkbox" id="${f.key}">
+            <div>
+              <div class="factor-title">${escapeHtml(f.label)} <span class="mono" style="font-weight:700; color: var(--muted2);">×${f.multiplier}</span></div>
+              ${desc ? `<div class="factor-desc">${escapeHtml(desc)}</div>` : ``}
+            </div>
+          </label>
+        `;
+        els.factorsContainer.appendChild(wrap);
+
+        wrap.querySelector("input").addEventListener("change", recompute);
+      });
+    }
+
+    function setFFXPreset(){
+      els.sales.value = "5300000";
+      els.releaseYear.value = "2001";
+      factors.forEach(f => {
+        const cb = document.getElementById(f.key);
+        if (cb) cb.checked = false;
+      });
+      ["f_physical","f_initial","f_main"].forEach(k => {
+        const cb = document.getElementById(k);
+        if (cb) cb.checked = true;
+      });
+      recompute();
+    }
+
+    function clearAll(){
+      els.sales.value = "";
+      els.releaseYear.value = "";
+      factors.forEach(f => {
+        const cb = document.getElementById(f.key);
+        if (cb) cb.checked = false;
+      });
+      recompute();
+    }
+
+    function copyResults(){
+      const sales = parseSales();
+      const ry = Number(els.releaseYear.value);
+      const years = getYearsSince(ry);
+      const bsr = getBSR(ry);
+      const fi = getFactorProduct();
+      const survival = getSurvival(ADMIN.ar, years);
+
+      let sealedNow = NaN;
+      let sealedRate = NaN;
+      if (Number.isFinite(sales) && Number.isFinite(bsr) && Number.isFinite(survival) && Number.isFinite(fi)) {
+        sealedNow = sales * bsr * survival * fi;
+        sealedRate = sealedNow / sales;
+      }
+
+      const selected = factors
+        .filter(f => document.getElementById(f.key)?.checked)
+        .map(f => `${f.key} (×${f.multiplier})`);
+
+      const text =
+`Sealed Game Estimator
+--------------------
+Sales: ${Number.isFinite(sales) ? Math.round(sales) : "—"}
+Release year: ${Number.isFinite(ry) ? ry : "—"}
+Years since: ${Number.isFinite(years) ? years : "—"}
+
+Admin:
+AR: ${ADMIN.ar}
+BSR: ${Number.isFinite(bsr) ? bsr : "—"}
+
+Selected factors:
+${selected.length ? "- " + selected.join("\\n- ") : "(none)"}
+
+Results:
+Fi (Π): ${Number.isFinite(fi) ? fi.toFixed(5) : "—"}
+Survival: ${Number.isFinite(survival) ? survival.toFixed(5) : "—"}
+SealedNow: ${Number.isFinite(sealedNow) ? Math.round(sealedNow) : "—"}
+Sealed rate: ${Number.isFinite(sealedRate) ? (sealedRate*100).toFixed(3) + "%" : "—"}
+`;
+
+      (navigator.clipboard?.writeText(text) ?? Promise.reject()).then(() => {
+        els.copyResults.textContent = "Copied!";
+        setTimeout(() => els.copyResults.textContent = "Copy Results", 900);
+      }).catch(() => window.prompt("Copy this:", text));
+    }
+
+    // ===== Init =====
+    renderFactors();
+
+    els.sales.addEventListener("input", recompute);
+    els.releaseYear.addEventListener("input", recompute);
+    els.resetFFX.addEventListener("click", setFFXPreset);
+    els.clearAll.addEventListener("click", clearAll);
+    els.copyResults.addEventListener("click", copyResults);
+
+    // Start blank by default (as requested)
+    clearAll();
+  </script>
+</body>
+</html>
