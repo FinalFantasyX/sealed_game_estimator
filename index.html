@@ -280,7 +280,7 @@
       <div class="card">
         <div class="head">
           <h2>Inputs</h2>
-          <p>Fill in Total Sold and Year Released. Use <b>PS2 FFX</b> as a demo.</p>
+          <p>Fill in <b>Total Sold</b> and <b>Release Year</b>. Use <b>PS2 FFX</b> as a demo.</p>
         </div>
         <div class="body">
           <div class="row">
@@ -305,6 +305,15 @@
 
           <div class="footer">
             <div><b>Tip:</b> Release Year affects the Baseline Sealed Rate (BSR).</div>
+            <br>
+            <div><b>How it works:</b><br>
+              1) Start with how many copies were sold,<br>
+              2) Reduce by an estimate of how many were initially opened vs. left sealed (BSR),<br>
+              3) Reduce due to attrition over time ((1 − AR)^Y)*,<br>
+              4) Adjust based on extenuating factors Π(Fᵢ).<br>
+              * Natural attrition caused by floods, fires, mold, chew, battery corrosion, storage damage, seal tears, etc.
+            
+            </div>
           </div>
         </div>
       </div>
@@ -359,7 +368,7 @@
 
       <div class="card" style="grid-column: 1 / -1;">
         <div class="head">
-          <h2>Factors</h2>
+          <h2>Extenuating Factors</h2>
           <p>Check all that apply.</p>
         </div>
         <div class="body">
@@ -382,19 +391,21 @@
     };
 
     // ===== Factors (user toggles) =====
+    // If it makes opening more likely, multiplier < 1
+    // If it makes staying sealed more likely, multiplier > 1
     const factors = [
-      { key: "f_bundle",   multiplier: 0.5,  label: "Pack-in/Bundle", description: "Games opened more often when purchased with their accompanying system", defaultOn: false },
-      { key: "f_multi",    multiplier: 0.8,  label: "Multiplayer", description: "Games opened more often when playing in a community", defaultOn: false },
-      { key: "f_dlc",      multiplier: 0.65,  label: "Online Code/DLC", description: "Games opened more often when there is incentive to open", defaultOn: false },
-      { key: "f_physical", multiplier: 0.4, label: "Physical Only at time of release", description: "Physical games opened more often when there is no online option", defaultOn: false },
-      { key: "f_initial",  multiplier: 0.5, label: "Initial Print Run", description: "Games new to market are often opened more frequently. Re-master/Greatest Hits/Platinum/Selects often forgotten about or purchased in duplicate", defaultOn: false },
-      { key: "f_box",      multiplier: 0.4,  label: "Boxed", description: "Boxed games are more susceptible to water/dirt/heat/crushing damage vs DVD/CD cases; weak seals susceptible to tearing (h-seam vs y-folds)", defaultOn: false },
-      { key: "f_holiday",  multiplier: 0.6,  label: "Nov/Dec Release", description: "Christmas gifts are often opened right away", defaultOn: false },
-      { key: "f_limited",  multiplier: 3.8,  label: "Limited-run collector-focused", description: "Limited-run collector-focused", defaultOn: false },
-      { key: "f_child",    multiplier: 0.4,  label: "Intended Audience/Child Focused", description: "Games intended for young audience generally open immediately, adult games can sit sealed in backlog", defaultOn: false },
       { key: "f_main",     multiplier: 0.6, label: "Main Line Games", description: "Popular games tend to be opened more often (Mario, Legend of Zelda, Final Fantasy, etc.)", defaultOn: false },
-      { key: "f_xxx",     multiplier: 0.1, label: "Adult Game", description: "Perverted adults always open games to see pixel boobs", defaultOn: false },
-      { key: "f_rpg",     multiplier: 0.95, label: "RPG", description: "RPGs tend to be opened more often than other types", defaultOn: false },
+      { key: "f_bundle",   multiplier: 0.5, label: "Pack-in/Bundle", description: "Games opened more often when purchased with their accompanying system", defaultOn: false },
+      { key: "f_multi",    multiplier: 0.8, label: "Multiplayer", description: "Games opened more often when playing in a community", defaultOn: false },
+      { key: "f_dlc",      multiplier: 0.65,label: "Online Code/DLC", description: "Games opened more often when there is incentive to open", defaultOn: false },
+      { key: "f_physical", multiplier: 0.4, label: "Physical Only at time of release", description: "Physical games opened more often when no alternative exists (online store, ROMs, etc.)", defaultOn: false },
+      { key: "f_initial",  multiplier: 0.5, label: "Initial Print Run", description: "Games new to market are often opened more frequently. Re-master/Greatest Hits/Platinum/Selects often forgotten about or purchased in duplicate", defaultOn: false },
+      { key: "f_box",      multiplier: 0.4, label: "Boxed", description: "Boxed games are more susceptible to water/dirt/heat/crushing damage vs DVD/CD cases; weak seals susceptible to tearing (h-seam vs y-folds)", defaultOn: false },
+      { key: "f_limited",  multiplier: 25.0,label: "Limited-run collector-focused", description: "Games manufactured for collectors (ex anything issued by Limited Run Games)", defaultOn: false },
+      { key: "f_child",    multiplier: 0.4, label: "Intended Audience/Child Focused", description: "Games intended for young audience generally open immediately", defaultOn: false },
+      { key: "f_xxx",      multiplier: 0.1, label: "Adult XXX Game", description: "Adults tend to open these games to see pixel boobs", defaultOn: false },
+      { key: "f_holiday",  multiplier: 0.6, label: "Nov/Dec Release", description: "Christmas gifts are often opened right away", defaultOn: false },
+      // { key: "f_rpg",      multiplier: 0.95,label: "RPG", description: "RPGs tend to be opened more often than other types", defaultOn: false },
     ];
 
     // ===== DOM =====
