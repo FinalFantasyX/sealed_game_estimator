@@ -365,6 +365,9 @@
         <div class="body">
           <div class="factors" id="factorsContainer"></div>
         </div>
+        <div class="footer">
+          <div>&nbsp; &nbsp; © 2025 Jamie Barone Enterprises - Contact jabarone11@gmail.com</div>
+        </div>
       </div>
     </div>
   </div>
@@ -418,31 +421,37 @@
       if (!Number.isFinite(n)) return "—";
       return Math.round(n).toLocaleString("en-US");
     }
+    
     function formatPct(x){
       if (!Number.isFinite(x)) return "—";
       return (x*100).toFixed(3) + "%";
     }
+    
     function formatFloat(x, digits=5){
       if (!Number.isFinite(x)) return "—";
       return x.toFixed(digits);
     }
+    
     function parseSales(){
       const raw = (els.sales.value || "").replace(/,/g,"").trim();
       if (!raw) return NaN;
       const n = Number(raw);
       return Number.isFinite(n) ? n : NaN;
     }
+    
     function getBSR(year){
       if (!Number.isFinite(year)) return NaN;
       if (year < 2000) return ADMIN.bsr_pre2000;
       if (year <= 2010) return ADMIN.bsr_2000_2010;
       return ADMIN.bsr_post2010;
     }
+    
     function getYearsSince(year){
       if (!Number.isFinite(year)) return NaN;
       const y = nowYear - year;
       return y >= 0 ? y : NaN;
     }
+    
     function getFactorProduct(){
       let prod = 1;
       factors.forEach(f => {
@@ -451,6 +460,7 @@
       });
       return prod;
     }
+    
     function getSurvival(ar, years){
       if (!Number.isFinite(ar) || !Number.isFinite(years)) return NaN;
       return Math.pow(1 - ar, years);
